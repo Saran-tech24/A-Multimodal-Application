@@ -55,7 +55,7 @@ def process_audio(audio_path, image_option):
         try:
             model_id1 = "dreamlike-art/dreamlike-diffusion-1.0"
             pipe = StableDiffusionPipeline.from_pretrained(model_id1, torch_dtype=torch.float16, use_safetensors=True)
-            pipe = pipe.to("cpu")
+            pipe = pipe.to("cuda")
             image = pipe(translation).images[0]
         except Exception as e:
             return tamil_text, translation, f"An error occurred during image generation: {str(e)}"
