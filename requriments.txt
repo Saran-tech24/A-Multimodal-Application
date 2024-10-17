@@ -1,0 +1,8 @@
+openai-whisper
+deep-translator
+groq
+gradio
+diffusers 
+transformers 
+accelerate
+torch
