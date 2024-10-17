@@ -5,7 +5,6 @@ from groq import Groq
 from deep_translator import GoogleTranslator
 import pickle
 from diffusers import StableDiffusionPipeline
-import matplotlib.pyplot as plt
 import torch
 
 
