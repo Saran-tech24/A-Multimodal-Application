@@ -3,29 +3,19 @@ import gradio as gr
 from groq import Groq
 from deep_translator import GoogleTranslator
 from diffusers import StableDiffusionPipeline
+import os
 import torch
 
-
-# Replace with your actual API key
-api_key ="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"
+api_key ="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"
 client = Groq(api_key=api_key)
 
-
 model_id1 = "dreamlike-art/dreamlike-diffusion-1.0"
-model_id2 = "stabilityai/stable-diffusion-xl-base-1.0"
-
 pipe = StableDiffusionPipeline.from_pretrained(model_id1, torch_dtype=torch.float16, use_safetensors=True)
-pipe = pipe.to("cpu")
+pipe = pipe.to("cuda")
 
-prompt = """dreamlikeart, a grungy woman with rainbow hair, travelling between dimensions, dynamic pose, happy, soft eyes and narrow chin,
-extreme bokeh, dainty figure, long hair straight down, torn kawaii shirt and baggy jeans
-"""
-image = pipe(prompt).images[0]
-
-# Function to transcribe, translate, and analyze sentiment
 def process_audio(audio_path, image_option):
     if audio_path is None:
-        return "Please upload an audio file.", None, None, None
+        return "Please upload an audio file.", None, None
 
     # Step 1: Transcribe audio
     try:
@@ -40,14 +30,13 @@ def process_audio(audio_path, image_option):
     except Exception as e:
         return f"An error occurred during transcription: {str(e)}", None, None, None
 
+
     # Step 2: Translate Tamil to English
     try:
         translator = GoogleTranslator(source='ta', target='en')
         translation = translator.translate(tamil_text)
     except Exception as e:
-        return tamil_text, f"An error occurred during translation: {str(e)}", None, None
-
-
+        return tamil_text, f"An error occurred during translation: {str(e)}", None
 
     # Step 3: Generate image (if selected)
     image = None
@@ -55,7 +44,7 @@ def process_audio(audio_path, image_option):
         try:
             model_id1 = "dreamlike-art/dreamlike-diffusion-1.0"
             pipe = StableDiffusionPipeline.from_pretrained(model_id1, torch_dtype=torch.float16, use_safetensors=True)
-            pipe = pipe.to("cpu")
+            pipe = pipe.to("cuda")
             image = pipe(translation).images[0]
         except Exception as e:
             return tamil_text, translation, f"An error occurred during image generation: {str(e)}"
@@ -64,7 +53,7 @@ def process_audio(audio_path, image_option):
 
 # Create Gradio interface
 with gr.Blocks(theme=gr.themes.Base()) as iface:
-    gr.Markdown("# Audio Transcription, Translation, and image Generate")
+    gr.Markdown("# Audio Transcription, Translation, and Image Generation")
     with gr.Row():
         with gr.Column():
             audio_input = gr.Audio(type="filepath", label="Upload Audio File")
