@@ -51,3 +51,5 @@ TransArt is a web-based application designed to translate text from Tamil to Eng
 3.User manual for interacting with the app.
 
 4.Performance analysis evaluating functionality, scalability, and user engagement.
+
+![Screenshot (215)](https://github.com/user-attachments/assets/824b9cee-1694-4367-b87a-8f30494d5d37)
