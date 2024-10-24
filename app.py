@@ -1,4 +1,3 @@
-# prompt: i need to add feature in Load GPT-Neo for creative text generation in english when the Translate Tamil to English at this Audio Transcription, Translation, and Image Generation
 import whisper
 import gradio as gr
 from groq import Groq
