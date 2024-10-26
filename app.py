@@ -6,16 +6,56 @@ from diffusers import StableDiffusionPipeline
 import os
 import torch
 import openai
+from huggingface_hub import InferenceApi
+from PIL import Image
+import requests
+import io
+import time
 
-
-
-api_key ="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"
+# Set up Groq API key
+api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-model_id1 = "dreamlike-art/dreamlike-diffusion-1.0"
-pipe = StableDiffusionPipeline.from_pretrained(model_id1, torch_dtype=torch.float16, use_safetensors=True)
-pipe = pipe.to("cuda")
+# Hugging Face API details for image generation
+H_key = os.getenv("Hugging_api_key")
+API_URL = "https://api-inference.huggingface.co/models/Artples/LAI-ImageGeneration-vSDXL-2"
+headers = {"Authorization": f"Bearer {H_key}"}
 
+
+# Function for querying image generation with retries
+def query_image_generation(payload, max_retries=5):
+    for attempt in range(max_retries):
+        response = requests.post(API_URL, headers=headers, json=payload)
+
+        if response.status_code == 503:
+            print(f"Model is still loading, retrying... Attempt {attempt + 1}/{max_retries}")
+            estimated_time = min(response.json().get("estimated_time", 60), 60)
+            time.sleep(estimated_time)
+            continue
+
+        if response.status_code != 200:
+            print(f"Error: Received status code {response.status_code}")
+            print(f"Response: {response.text}")
+            return None
+
+        return response.content
+
+    print(f"Failed to generate image after {max_retries} attempts.")
+    return None
+
+# Function for generating an image from text
+def generate_image(prompt):
+    image_bytes = query_image_generation({"inputs": prompt})
+
+    if image_bytes is None:
+        return None
+
+    try:
+        image = Image.open(io.BytesIO(image_bytes))  # Opening the image from bytes
+        return image
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
 
 
 # Updated function for text generation using the new API structure
@@ -28,6 +68,7 @@ def generate_creative_text(prompt):
             )
     chatbot_response = chat_completion.choices[0].message.content
     return chatbot_response
+
 
 def process_audio(audio_path, image_option, creative_text_option):
     if audio_path is None:
@@ -45,8 +86,7 @@ def process_audio(audio_path, image_option, creative_text_option):
         tamil_text = transcription.text
     except Exception as e:
         return f"An error occurred during transcription: {str(e)}", None, None, None
-
-
+   
     # Step 2: Translate Tamil to English
     try:
         translator = GoogleTranslator(source='ta', target='en')
@@ -59,19 +99,15 @@ def process_audio(audio_path, image_option, creative_text_option):
     if creative_text_option == "Generate Creative Text":
         creative_text = generate_creative_text(translation)
 
-
     # Step 4: Generate image (if selected)
     image = None
     if image_option == "Generate Image":
-        try:
-            model_id1 = "dreamlike-art/dreamlike-diffusion-1.0"
-            pipe = StableDiffusionPipeline.from_pretrained(model_id1, torch_dtype=torch.float16, use_safetensors=True)
-            pipe = pipe.to("cuda")
-            image = pipe(translation).images[0]
-        except Exception as e:
-            return tamil_text, translation, creative_text, f"An error occurred during image generation: {str(e)}"
+        image = generate_image(translation)
+        if image is None:
+            return tamil_text, translation, creative_text, f"An error occurred during image generation"
 
-    return tamil_text, translation, creative_text, image
+    return tamil_text, translation, creative_text, image      
+
 
 # Create Gradio interface
 with gr.Blocks(theme=gr.themes.Base()) as iface:
@@ -95,3 +131,4 @@ with gr.Blocks(theme=gr.themes.Base()) as iface:
 
 # Launch the interface
 iface.launch()
+
